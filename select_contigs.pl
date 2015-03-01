@@ -125,5 +125,6 @@ sub calc_stat(){
     }else{
 	$CV = 99;
     }
+
     return ($c_ave, $c_std, $CV);
 }
