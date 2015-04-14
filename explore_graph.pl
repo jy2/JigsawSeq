@@ -42,20 +42,21 @@ my $num_contigs=0;
 open(OUT, ">$result_fname");
 print OUT "#number_of_initial\t", $#initial_nodes+1, "\n";
 for(my $i=0; $i<=$#initial_nodes; $i++){ print OUT "#initial_node\_$i\t$initial_nodes[$i]\n"; }
-print OUT "#number_of_terminal\t", $#initial_nodes+1, "\n";
+print OUT "#number_of_terminal\t", $#terminal_nodes+1, "\n";
 for(my $i=0; $i<=$#terminal_nodes; $i++){ print OUT "#terminal_node\_$i\t$terminal_nodes[$i]\n"; }
-print OUT join("\t", "#contig_name", "depth", "initial_node", "terminal_node", "sequence"), "\n";
+print OUT join("\t", "#contig_name", "length", "depth", "initial_node", "terminal_node", "sequence"), "\n";
 open(FA, ">$fa_fname");
 for my $key (keys %contigs){
 	$num_contigs++;
-	print FA ">$in_fname\_$num_contigs\n", $initial_nodes[$contigs{$key}{'n_init'}], $key, $terminal_nodes[$contigs{$key}{'n_term'}], "\n";
-	print OUT join("\t", "$in_fname\_$num_contigs", $contigs{$key}{'num'}, $contigs{$key}{'n_init'}, $contigs{$key}{'n_term'}, $key);
+	print FA ">$out_fname\_$num_contigs\n", $initial_nodes[$contigs{$key}{'n_init'}], $key, $terminal_nodes[$contigs{$key}{'n_term'}], "\n";
+	print OUT join("\t", "$out_fname\_$num_contigs", length($key), $contigs{$key}{'num'}, $contigs{$key}{'n_init'}, $contigs{$key}{'n_term'}, $key), "\n";
 }
 close(FA);
 close(OUT);
 
 $t_end = new Benchmark;
-print "[Report:explore_graph] Mem. Used = ", JigsawSeq::memcheck(), " Gb; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
+print "[Report:explore_graph] $fa_fname and $result_fname were recorded\n", 
+      "                       Mem. Used = ", JigsawSeq::memcheck(), " Gb; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
 exit;
 
 #------------------

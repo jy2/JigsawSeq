@@ -25,7 +25,7 @@ BuildGraph();
 system("./detect_seeds.pl -I $output_prefix\.graph.clean -V $vector_seq -O $output_prefix\.seeds.fa -k $k_mer_len -s $step_size --cut_seed $cut_seed -t $num_thread");
 
 # Search candidate contigs
-system("./explore_graph.pl -I $output_prefix\.graph.clean -S $output_prefix\.seeds.fa -O $output_prefix\.contigs.fa -L $exp_contig_size -k $k_mer_len -s $step_size");
+system("./explore_graph.pl -I $output_prefix\.graph.clean -S $output_prefix\.seeds.fa -O $output_prefix\.contigs -L $exp_contig_size -k $k_mer_len -s $step_size");
 
 if ($realign == 1){
 	# Map raw reads to candidates and find contigs
