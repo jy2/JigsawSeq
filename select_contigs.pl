@@ -3,7 +3,7 @@ use strict;
 
 # Search contigs from candidates using depth distribution
 # requirement: perl version 5.10.1 or higher
-# last modified: Feb-26-2014
+# last modified: Feb-26-2015
 # Developed by Jung-Ki Yoon
 
 my $usage = "./select_contigs.pl [input: candidate.fa] [input: samtools depth] [input: k-mer length] [input: step-size] [input: cutoff of CV] [input: read length] [output_prefix: contigs]\n";

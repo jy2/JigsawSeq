@@ -2,32 +2,32 @@
 
 # Detect initial/terminal seeds.
 # Requirement: bwa 0.7.5a-r405
-# last modified: Nov-22-2014
+# last modified: Apr-13-2015
 # Developed by Jung-Ki Yoon
 
 use strict;
 use JigsawSeq;
 use Benchmark ':hireswallclock';
 
-#my $usage = "[Usage] ./detect_seeds.pl [input: Kmer fasta] [input: vector fasta] [k: k-mer length] [s: step size] [r: cutoff ratio] [output: seeds]\n";
-my $usage = "[Usage] ./detect_seeds.pl [input: graph] [input: vector fasta] [k: k-mer length] [s: step size] [r: cutoff ratio of seeds] [t: number of threads] [output: seeds]\n";
-die $usage unless ($#ARGV == 6);
-our ($in_fname, $vector_fname, $in_kmer, $step_size, $cutoff_ratio, $threads, $out_fname,) = @ARGV;
+our ($in_fname, $vector_seq, $k_mer_len, $step_size, $cut_seed, $num_thread, $out_fname,);
+ReadArgument();
+
 our $kmer_fname = "TMP_$in_fname\.kmer.fa";
-my $len_ref_seed = int($in_kmer*1.5);				# allow a half size of k-mer as insertion on seeds
-our $ref_seed_fname = "TMP_k$in_kmer\_" . $vector_fname;
+my $len_ref_seed = int($k_mer_len*1.5);				# allow a half size of k-mer as insertion on seeds
+our $ref_seed_fname = "TMP_k$k_mer_len\_" . $vector_seq;
 our $seeds_sam_fname = "TMP_$in_fname\.seed.sam";
 my $t_begin = new Benchmark;
-print "[Report:detect_seeds] input: $in_fname vector: $vector_fname k-mer: $in_kmer, step_size: $step_size, cut_seeds: $cutoff_ratio, output: $out_fname\n";
+print "[Report:detect_seeds] input: $in_fname vector: $vector_seq k-mer: $k_mer_len, step_size: $step_size, cut_seed: $cut_seed, output: $out_fname\n";
 
 Kmer2Fa();
 Vector2Fa();
 
 print "[Report:detect_seeds] Align nodes to vector using bwa\nBWA----------------------\n";
 system("./bwa index $ref_seed_fname > $ref_seed_fname\.log");
-system("./bwa mem -t $threads -O2 -E1 $ref_seed_fname $kmer_fname > $seeds_sam_fname");
+system("./bwa mem -t $num_thread -v 1 -O2 -E1 $ref_seed_fname $kmer_fname > $seeds_sam_fname");
 my $t_end = new Benchmark;
-print "-----------------------BWA\n[Report:detect_seeds] Alignment was completed; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n";
+print "-----------------------BWA\n", 
+      "[Report:detect_seeds] Alignment was completed; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n";
 
 AnalyzingSeeds();
 exit;
@@ -46,11 +46,11 @@ sub Kmer2Fa{
 	}
 	close(IN);
 	close(OUT);
-	print "[Report:detect_seeds] $num_lines nodes were ready for running dectect seeds\n";
+	print "[Report:detect_seeds] $num_lines nodes were ready for running dectect seeds.\n";
 }
 
 sub Vector2Fa{
-	open(IN, "<$vector_fname") or die "[Error:detect_seeds] Can't open $vector_fname.\n";
+	open(IN, "<$vector_seq") or die "[Error:detect_seeds] Can't open $vector_seq.\n";
 	open(OUT, ">$ref_seed_fname");
 	<IN>;
 	my ($seq,)=split /\s+/, <IN>;
@@ -61,7 +61,9 @@ sub Vector2Fa{
 }
 
 sub AnalyzingSeeds {
-	my $num_lines=my $num_align_init=my $num_init=my $num_align_term=my $num_term=0;
+	my %init_SEEDS;
+	my %term_SEEDS;
+	my $num_lines=my $num_align_init=my $num_init=my $final_init=my $num_align_term=my $num_term=my $final_term=0;
 	my $max_DP_init=my $max_DP_term=-1;
 	open(IN, "<$seeds_sam_fname") or die "[Error:detect_seeds] Can't open $seeds_sam_fname.\n";
 	open(OUT, ">$out_fname");
@@ -78,41 +80,109 @@ sub AnalyzingSeeds {
 		if ($rname eq "initial"){
 			$num_align_init++;
 			($qname, my $DP) = split /_/, $qname;
-			if ($max_DP_init == -1){$max_DP_init=$DP;}
-			next if (($max_DP_init / $DP > $cutoff_ratio)||($DP < $cutoff_ratio));
+#			if ($max_DP_init == -1){$max_DP_init=$DP;}
+#			next if (($max_DP_init / $DP > $cut_seed)||($DP < $cut_seed));
 			for(my $i=0; $i<=$#d; $i++){
 				$sum_d+=$d[$i];
 			}
 			if (($pos + $sum_d) == ($len_ref_seed+1) ) {
 		    	if ($l[$#l] eq "S"){
-				next;
+					next;
 			    }
-		    	print OUT ">initial $DP\n$str\n";
-			    $num_init++;
+		    	$init_SEEDS{$str} = $DP;
+		    	if ($max_DP_init<$DP) {$max_DP_init=$DP;}
+#		    	print OUT ">initial $DP\n$str\n";
+#			    $num_init++;
 			}
 		}elsif ($rname eq "terminal"){
 			$num_align_term++;
 			($qname, my $DP) = split /_/, $qname;
-			if ($max_DP_term == -1){$max_DP_term=$DP;}
-			next if (($max_DP_term / $DP > $cutoff_ratio)||($DP < $cutoff_ratio));
+#			if ($max_DP_term == -1){$max_DP_term=$DP;}
+#			next if (($max_DP_term / $DP > $cut_seed)||($DP < $cut_seed));
 			for(my $i=0; $i<=$#d; $i++){
 				if (($l[$i] eq "M")||($l[$i] eq "I")){
 					$sum_d+=$d[$i];
 				}
 			}
-			if (($pos == 1)&&($sum_d==($in_kmer-$step_size))){
-				print OUT ">terminal $DP\n$str\n";
-				$num_term++;
+			if (($pos == 1)&&($sum_d==($k_mer_len-$step_size))){
+				$term_SEEDS{$str} = $DP;
+				if ($max_DP_term<$DP) {$max_DP_term=$DP;}
+#				print OUT ">terminal $DP\n$str\n";
+#				$num_term++;
 			}
 		}
 	}
 	close(IN);
+
+	foreach my $str (keys %init_SEEDS){
+		my $DP = $init_SEEDS{$str};
+		$num_init++;
+		next if ( (($max_DP_init/$DP)>$cut_seed)||($DP<$cut_seed) );
+		print OUT ">initial $DP\n$str\n";
+		$final_init++;
+	}	
+	foreach my $str (keys %term_SEEDS){
+		my $DP = $term_SEEDS{$str};
+		$num_term++;
+		next if ( (($max_DP_term/$DP)>$cut_seed)||($DP<$cut_seed) );
+		print OUT ">terminal $DP\n$str\n";
+		$final_term++;
+	}	
 	close(OUT);
 
 	my $t_end = new Benchmark; 
-	print "[Report:detect_seeds] Cutoff ratio of seeds: $cutoff_ratio\tMax_inti_DP: $max_DP_init\tMax_term_DP: $max_DP_term\n";
+	print "[Report:detect_seeds] Cutoff ratio of seeds: $cut_seed\tMax_inti_DP: $max_DP_init\tMax_term_DP: $max_DP_term\n";
 	print "[Report:detect_seeds] $num_lines K-mers were processed.\n";
-	print "[Report:detect_seeds] $num_align_init K-mers were alinged to initial node.\t$num_init were considered as initial nodes.\n";
-	print "[Report:detect_seeds] $num_align_term K-mers were aligned to terminal node.\t$num_term were considered as terminal nodes.\n";
+	print "[Report:detect_seeds] $num_align_init K-mers were alinged to initial seq. of backbone.\t$num_init were well matched.\t$final_init were passed the cutoff(=initial seeds).\n";
+	print "[Report:detect_seeds] $num_align_term K-mers were aligned to terminal seq. of backbone.\t$num_term were well matched.\t$final_term were passed the cutoff(=terminal seeds).\n";
 	print "                      Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
+}
+
+sub ReadArgument{
+	my @command_line = @ARGV;               #command line argument
+
+	#set default values;
+	$k_mer_len = 120;
+	$step_size = 3;
+	$cut_seed = 100;
+	$num_thread = 3;
+
+	#parse arguments
+    while (defined(my $arg=shift(@ARGV))){
+    	if (($arg eq "-I")||($arg eq "--input")){ $in_fname = shift @ARGV; next; }
+    	if (($arg eq "-V")||($arg eq "--vector")){ $vector_seq = shift @ARGV; next; }
+    	if (($arg eq "-O")||($arg eq "--output")){ $out_fname = shift @ARGV; next; }
+    	if (($arg eq "-k")||($arg eq "--kmer")){ $k_mer_len = shift @ARGV; next; }
+    	if (($arg eq "-s")||($arg eq "--step")){ $step_size = shift @ARGV; next; }
+    	if ($arg eq "--cut_seed") { $cut_seed = shift @ARGV; next; }
+    	if (($arg eq "-t")||($arg eq "--thread")){ $num_thread = shift @ARGV; next; }
+       	if (($arg eq "-h")||($arg eq "-?")||($arg eq "--help")){ printError(); next; }
+    	PrintError("Can't identify the argument: $arg");
+    }
+
+    #check validity of arguments
+    PrintError("Arguments -I, -O, -V are required.") unless ( (defined $in_fname)&&(defined $vector_seq)&&(defined $out_fname) );
+	PrintError("Length of k-mer (--kmer) must be 40 <= k-mer <=150.") unless ((40<=$k_mer_len)&&($k_mer_len<=150));
+	PrintError("Step size (--step) must be 1, 2, or 3.") unless ((1<=$step_size)&&($step_size<=3));
+	PrintError("Length of k-mer (--kmer) must be divisible by step size (--step).") if ($k_mer_len % $step_size);
+	PrintError("Input filename ($in_fname) does not exist.") unless (-e $in_fname);
+	PrintError("Input filename ($vector_seq) does not exist.") unless (-e $vector_seq);
+}
+
+sub PrintError{
+	print "\n[Error:detect_seeds] ", join("\n", @_), "\n\n";
+
+	print "DESCRIPTION:\n    detect_seeds.pl is to detect initial and terminal seeds prior to explore graph.\n\n";
+	print "USAGE: detect_seeds.pl -I [input:graph] -O [output:fasta] -V [input:vector]\n\n";
+	print "OPTIONS:\n",
+		"    -I, --input       FILE    Input file name of graph [Required]\n",
+		"    -O, --output      FILE    Output filen name (fasta format) [Required]\n",
+		"    -V, --vector      FILE    Input filename of vector sequence (fasta format) [Required]\n",
+		"    -k, --kmer        INT     Length of k-mer [Default: 120]\n",
+		"    -s, --step        INT     Step size for exploring the graph [Default: 3]\n",
+		"    --cut_seed        INT     Cutoff ratio for seeds [Default: 150]\n",
+		"    -t, --thread      INT     Number of threads [Default: 3]\n";
+#		"    -h, -?, --help       This help message\n",
+	print "\n";
+	exit -1;
 }
