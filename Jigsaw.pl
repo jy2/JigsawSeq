@@ -222,3 +222,4 @@ sub DelTemp{
 		print "[Report:main] Temporary files were deleted.\n\n";
 	}
 }
+#----------------------------
