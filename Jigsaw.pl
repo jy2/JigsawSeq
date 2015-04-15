@@ -198,7 +198,7 @@ sub MergeGraph{
 		if ($cur_num % 2 == 1){
 			$count++;
 			print "[Report:main] $prefix\.p", $num_phase-1, "\.$cur_num\.merged\t-->\t$prefix\.p$num_phase\.$count\.merged\n";
-			system("mv $prefix\.p" . ($num_phase-1) . "\$cur_num\.merged $prefix\.p$num_phase\.$count\.merged");
+			system("mv $prefix\.p" . ($num_phase-1) . "\.$cur_num\.merged $prefix\.p$num_phase\.$count\.merged");
 		}		
 		$cur_num = $count;
 	}
