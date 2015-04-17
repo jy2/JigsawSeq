@@ -58,7 +58,7 @@ sub ReadArgument{
 
     #set default values;
     $sort = 0;
-    $word_len = 2;
+    $word_len = 4;
 
     #parse arguments
     while (defined(my $arg=shift(@ARGV))){
