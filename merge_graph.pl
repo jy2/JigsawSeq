@@ -98,9 +98,9 @@ foreach my $idx_str (sort (keys %IDX)){
 	foreach my $k (keys %data){
     	print OUT join("\t", $k, $data{$k}), "\n";
 	}
-	$t_end = new Benchmark; 
-	print "[Report:merge_graph] Total $num_kmer nodes has beed processed, and $num_merged nodes has been merged.\n", 
-	      "                     Mem. Used = ", JigsawSeq::memcheck(), " Gb; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n";
+#	$t_end = new Benchmark; 
+#	print "[Report:merge_graph] Total $num_kmer nodes has beed processed, and $num_merged nodes has been merged.\n", 
+#	      "                     Mem. Used = ", JigsawSeq::memcheck(), " Gb; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n";
 }
 close(IN1);
 close(IN2);
