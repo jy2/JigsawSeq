@@ -55,7 +55,7 @@ sub ReadArgument{
 	$cut_CV = 0.2163;
 	$num_thread = 3;
 	$read_length = 150;
-	$bin_size = 10000000;
+	$bin_size = 15000000;
 	$exc_fname = "exclusion.fa";
 
 	#parse arguments
