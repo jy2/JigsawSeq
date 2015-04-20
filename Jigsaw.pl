@@ -172,7 +172,7 @@ sub ChopFastq{
                         die "[Error:main] $fname may not be fastq format. (3rd line of fastq format is not '+'; $line)\n";
                     }
                 }
-                print OUT $line;
+                print OUT $line, "\n";
                 $num_lines++;
         }
         close(IN);
