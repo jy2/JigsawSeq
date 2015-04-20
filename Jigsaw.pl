@@ -5,7 +5,7 @@ use JigsawSeq;
 use Benchmark ':hireswallclock';
 
 our $Version = 'Version: r3';
-our $LAST_MODIFIED = 'LastModified: Apr-13-2015';
+our $LAST_MODIFIED = 'LastModified: Apr-20-2015';
     	
 our $verbose = our $realign = 0;
 our ($input_F, $input_R, $vector_seq, $output_prefix, $exc_fname); 
@@ -125,7 +125,9 @@ sub PrintError{
 sub BuildGraph{
 
 	#Chop Fastq
-	ChopFastq();
+        ChopFastq($input_F);
+        ChopFastq($input_R);
+        print "[Report:main] $num_files temporary files are ready.\n\n";
 
 	#Construct graph for each chopped fastq
 	for (my $i=1; $i<=$num_files; $i++){
@@ -141,41 +143,41 @@ sub BuildGraph{
 
 
 sub ChopFastq{
-	print "[Report:main] Start cutting input files (bin size = $bin_size).\n";
-	my $num_lines=0;
-	my $num_polyA=0;
-	
-	open(IN, "<$input_F") or die "[Error] Can't open $input_F";
-	while(<IN>){
-		if (($num_lines % $bin_size) == 0){
-			close(OUT) if ($num_files > 0);
-			$num_files++;
-			open(OUT, ">$prefix\.$num_files\.fastq");
-		}
-		print OUT $_;
-		$num_lines++;
-	}
-	close(IN);
-	open(IN, "$input_R") or die "[Error] Can't open $input_R";
-	while(<IN>){
-		if (($num_lines % $bin_size) == 0){
-			close(OUT);
-			$num_files++;
-			open(OUT, ">$prefix\.$num_files\.fastq");
-		}	
+        my $fname = shift;
+        print "[Report:main] Start cutting input file (file = $fname, bin size = $bin_size).\n";
+        my $num_lines=0;
+        my $num_polyA=0;
+        my $len_seq;
+
+        open(IN, "<$fname") or die "[Error] Can't open $fname";
+        while(<IN>){
                 (my $line, ) = split/\s+/, $_;
-                if (substr($line, -5) eq "AAAAA"){
-                    while(substr($line, -1) eq "A"){
-                        substr($line, -1) = "";
+                if (($num_lines % $bin_size) == 0){
+                        close(OUT) if ($num_files > 0);
+                        $num_files++;
+                        open(OUT, ">$prefix\.$num_files\.fastq");
+                }
+                if ($num_lines % 4 == 1){
+                    if (substr($line, -5) eq "AAAAA"){
+                        while(substr($line, -1) eq "A"){
+                            substr($line, -1) = "";
+                        }
+                        $num_polyA++;
                     }
-                    $num_polyA++;
-                 }
-                print OUT $line, "\n";
-		$num_lines++;
-	}
-	close(IN);
-	close(OUT);
-        print "[Report:main] $num_polyA reads were trimmed and $num_lines reads were recorded in $num_files temporary files.\n\n";
+                    $len_seq = length($line);
+                }elsif($num_lines % 4 == 3){
+                    $line = substr($line, 0, $len_seq);
+                }elsif($num_lines % 4 == 2){
+                    if ($line ne "+"){
+                        die "[Error:main] $fname may not be fastq format. (3rd line of fastq format is not '+'; $line)\n";
+                    }
+                }
+                print OUT $_;
+                $num_lines++;
+        }
+        close(IN);
+        close(OUT);
+        print "[Report:main] $num_polyA reads were trimmed and ", ($num_lines/4), " reads were recorded\n";
 }
 
 sub MergeGraph{
