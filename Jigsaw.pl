@@ -143,7 +143,8 @@ sub BuildGraph{
 sub ChopFastq{
 	print "[Report:main] Start cutting input files (bin size = $bin_size).\n";
 	my $num_lines=0;
-
+	my $num_polyA=0;
+	
 	open(IN, "<$input_F") or die "[Error] Can't open $input_F";
 	while(<IN>){
 		if (($num_lines % $bin_size) == 0){
@@ -162,12 +163,19 @@ sub ChopFastq{
 			$num_files++;
 			open(OUT, ">$prefix\.$num_files\.fastq");
 		}	
-		print OUT $_;
+                (my $line, ) = split/\s+/, $_;
+                if (substr($line, -5) eq "AAAAA"){
+                    while(substr($line, -1) eq "A"){
+                        substr($line, -1) = "";
+                    }
+                    $num_polyA++;
+                 }
+                print OUT $line, "\n";
 		$num_lines++;
 	}
 	close(IN);
 	close(OUT);
-	print "[Report:main] $num_files temporary files are ready.\n\n";
+        print "[Report:main] $num_polyA reads were trimmed and $num_lines reads were recorded in $num_files temporary files.\n\n";
 }
 
 sub MergeGraph{
