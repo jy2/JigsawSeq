@@ -33,7 +33,6 @@ for(my $i=0; $i<=$#initial_nodes; $i++){
 	explore_contig($i);
 	print "[Report:explore_graph] ", scalar(keys %contigs), " contigs were detected.\n";
 }
-close(OUT);
 
 # Print out (fasta + result)
 my $fa_fname = $out_fname . ".fa";
