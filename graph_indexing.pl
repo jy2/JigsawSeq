@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # Build index file for graph
-# last modified: Apr-13-2015
+# last modified: Apr-22-2015
 # Developed by Jung-Ki Yoon
 
 use strict;
@@ -74,7 +74,7 @@ sub ReadArgument{
 
 sub PrintError{
     print "\n[Error:graph_indexing] ", join("\n", @_), "\n\n";
-    print "USAGE: graph_indexing.pl \n";
+    print "USAGE: graph_indexing.pl -I [input:graph]\n";
     print "OPTIONS:\n",
         "    -I, --input     FILE    Input file name (graph file) [Required]\n",
         "    -O, --output    FILE    Prefix of index filename [Default: input file name]\n",

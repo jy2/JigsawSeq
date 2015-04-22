@@ -2,14 +2,14 @@
 
 # Detect initial/terminal seeds.
 # Requirement: bwa 0.7.5a-r405
-# last modified: Apr-13-2015
+# last modified: Apr-22-2015
 # Developed by Jung-Ki Yoon
 
 use strict;
 use JigsawSeq;
 use Benchmark ':hireswallclock';
 
-our ($in_fname, $vector_seq, $k_mer_len, $step_size, $cut_seed, $num_thread, $out_fname,);
+our ($in_fname, $vector_seq, $k_mer_len, $step_size, $cut_seed, $min_seed, $num_thread, $out_fname,);
 ReadArgument();
 
 our $kmer_fname = "TMP_$in_fname\.kmer.fa";
@@ -17,7 +17,7 @@ my $len_ref_seed = int($k_mer_len*1.5);				# allow a half size of k-mer as inser
 our $ref_seed_fname = "TMP_k$k_mer_len\_" . $vector_seq;
 our $seeds_sam_fname = "TMP_$in_fname\.seed.sam";
 my $t_begin = new Benchmark;
-print "[Report:detect_seeds] input: $in_fname vector: $vector_seq k-mer: $k_mer_len, step_size: $step_size, cut_seed: $cut_seed, output: $out_fname\n";
+print "[Report:detect_seeds] input: $in_fname vector: $vector_seq k-mer: $k_mer_len, step_size: $step_size, cut_seed: $cut_seed, min_seed: $min_seed, output: $out_fname\n";
 
 Kmer2Fa();
 Vector2Fa();
@@ -80,8 +80,6 @@ sub AnalyzingSeeds {
 		if ($rname eq "initial"){
 			$num_align_init++;
 			($qname, my $DP) = split /_/, $qname;
-#			if ($max_DP_init == -1){$max_DP_init=$DP;}
-#			next if (($max_DP_init / $DP > $cut_seed)||($DP < $cut_seed));
 			for(my $i=0; $i<=$#d; $i++){
 				$sum_d+=$d[$i];
 			}
@@ -91,14 +89,10 @@ sub AnalyzingSeeds {
 			    }
 		    	$init_SEEDS{$str} = $DP;
 		    	if ($max_DP_init<$DP) {$max_DP_init=$DP;}
-#		    	print OUT ">initial $DP\n$str\n";
-#			    $num_init++;
 			}
 		}elsif ($rname eq "terminal"){
 			$num_align_term++;
 			($qname, my $DP) = split /_/, $qname;
-#			if ($max_DP_term == -1){$max_DP_term=$DP;}
-#			next if (($max_DP_term / $DP > $cut_seed)||($DP < $cut_seed));
 			for(my $i=0; $i<=$#d; $i++){
 				if (($l[$i] eq "M")||($l[$i] eq "I")){
 					$sum_d+=$d[$i];
@@ -107,8 +101,6 @@ sub AnalyzingSeeds {
 			if (($pos == 1)&&($sum_d==($k_mer_len-$step_size))){
 				$term_SEEDS{$str} = $DP;
 				if ($max_DP_term<$DP) {$max_DP_term=$DP;}
-#				print OUT ">terminal $DP\n$str\n";
-#				$num_term++;
 			}
 		}
 	}
@@ -117,14 +109,14 @@ sub AnalyzingSeeds {
 	foreach my $str (keys %init_SEEDS){
 		my $DP = $init_SEEDS{$str};
 		$num_init++;
-		next if ( (($max_DP_init/$DP)>$cut_seed)||($DP<$cut_seed) );
+		next if ( (($max_DP_init/$DP)>$cut_seed)||($DP<$min_seed) );
 		print OUT ">initial $DP\n$str\n";
 		$final_init++;
 	}	
 	foreach my $str (keys %term_SEEDS){
 		my $DP = $term_SEEDS{$str};
 		$num_term++;
-		next if ( (($max_DP_term/$DP)>$cut_seed)||($DP<$cut_seed) );
+		next if ( (($max_DP_term/$DP)>$cut_seed)||($DP<$min_seed) );
 		print OUT ">terminal $DP\n$str\n";
 		$final_term++;
 	}	
@@ -145,6 +137,7 @@ sub ReadArgument{
 	$k_mer_len = 120;
 	$step_size = 3;
 	$cut_seed = 100;
+	$min_seed = 100;
 	$num_thread = 3;
 
 	#parse arguments
@@ -155,6 +148,7 @@ sub ReadArgument{
     	if (($arg eq "-k")||($arg eq "--kmer")){ $k_mer_len = shift @ARGV; next; }
     	if (($arg eq "-s")||($arg eq "--step")){ $step_size = shift @ARGV; next; }
     	if ($arg eq "--cut_seed") { $cut_seed = shift @ARGV; next; }
+    	if ($arg eq "--min_seed") { $min_seed = shift @ARGV; next; }
     	if (($arg eq "-t")||($arg eq "--thread")){ $num_thread = shift @ARGV; next; }
        	if (($arg eq "-h")||($arg eq "-?")||($arg eq "--help")){ printError(); next; }
     	PrintError("Can't identify the argument: $arg");
@@ -178,10 +172,11 @@ sub PrintError{
 		"    -I, --input       FILE    Input file name of graph [Required]\n",
 		"    -O, --output      FILE    Output filen name (fasta format) [Required]\n",
 		"    -V, --vector      FILE    Input filename of vector sequence (fasta format) [Required]\n",
-		"    -k, --kmer        INT     Length of k-mer [Default: 120]\n",
-		"    -s, --step        INT     Step size for exploring the graph [Default: 3]\n",
-		"    --cut_seed        INT     Cutoff ratio for seeds [Default: 150]\n",
-		"    -t, --thread      INT     Number of threads [Default: 3]\n";
+		"    -k, --kmer        INT     Length of k-mer [Default: $k_mer_len]\n",
+		"    -s, --step        INT     Step size for exploring the graph [Default: $step_size]\n",
+		"    --cut_seed        INT     Cutoff ratio for seeds [Default: $cut_seed]\n",
+	        "    --min_seed        INT     Miniumn depth of seeds [Default: $min_seed]\n",
+		"    -t, --thread      INT     Number of threads [Default: $num_thread]\n";
 #		"    -h, -?, --help       This help message\n",
 	print "\n";
 	exit -1;

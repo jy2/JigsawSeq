@@ -2,7 +2,7 @@
 
 # This script is to merge de Bruijn graph files with index files
 # developed by Jung-Ki Yoon
-# last modified: Apr-12-2015
+# last modified: Apr-22-2015
 
 use strict;
 use JigsawSeq;
@@ -48,7 +48,7 @@ close(IN);
 print "[Report:merge_graph] Merge $in_fname1 and $in_fname2 into $out_fname\n";
 our $t_begin = new Benchmark;
 our $t_end;
-my $num_kmer=my $num_merged=0;
+my $num_kmer=my $num_merged=my $num_result=0;
 open(IN1, "<$in_fname1") or die "[Error:merge_graph] Can't open $in_fname1.\n";
 open(IN2, "<$in_fname2") or die "[Error:merge_graph] Can't open $in_fname2.\n";
 open(OUT, ">$out_fname");
@@ -96,6 +96,7 @@ foreach my $idx_str (sort (keys %IDX)){
 #	print "[Report:merge_graph] From $in_fname2, $load_nodes_2 nodes ($idx_str) were loaded.\n";
 
 	foreach my $k (keys %data){
+	    $num_result++;
     	print OUT join("\t", $k, $data{$k}), "\n";
 	}
 #	$t_end = new Benchmark; 
@@ -107,6 +108,6 @@ close(IN2);
 close(OUT);
 
 $t_end = new Benchmark; 
-print "[Report:merge_graph] In $out_fname, $num_kmer nodes were recorded.\n", 
+print "[Report:merge_graph] From $num_kmer nodes, $num_merged nodes were merged and $num_result nodes were recorded in $out_fname.\n", 
       "                     Mem. Used = ", JigsawSeq::memcheck(), " Gb; Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
 exit;

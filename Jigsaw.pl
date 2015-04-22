@@ -5,11 +5,11 @@ use JigsawSeq;
 use Benchmark ':hireswallclock';
 
 our $Version = 'Version: r3';
-our $LAST_MODIFIED = 'LastModified: Apr-20-2015';
+our $LAST_MODIFIED = 'LastModified: Apr-22-2015';
     	
 our $verbose = our $realign = 0;
 our ($input_F, $input_R, $vector_seq, $output_prefix, $exc_fname); 
-our ($exp_contig_size, $k_mer_len, $step_size, $min_depth, $cut_edge, $cut_seed, $cut_CV, $read_length);
+our ($exp_contig_size, $k_mer_len, $step_size, $min_depth, $cut_edge, $cut_seed, $min_seed, $cut_CV, $read_length);
 our ($bin_size, $num_thread);
 my $t_begin = new Benchmark;
 
@@ -22,13 +22,13 @@ our $prefix = "TMP_input_$output_prefix";
 BuildGraph();
 
 # Detect initial/terminal seeds
-system("./detect_seeds.pl -I $output_prefix\.graph.clean -V $vector_seq -O $output_prefix\.seeds.fa -k $k_mer_len -s $step_size --cut_seed $cut_seed -t $num_thread");
+system("./detect_seeds.pl -I $output_prefix\.graph.clean -V $vector_seq -O $output_prefix\.seeds.fa -k $k_mer_len -s $step_size --cut_seed $cut_seed --min_seed $min_seed -t $num_thread");
 
 # Search candidate contigs
 system("./explore_graph.pl -I $output_prefix\.graph.clean -S $output_prefix\.seeds.fa -O $output_prefix\.contigs -L $exp_contig_size -k $k_mer_len -s $step_size");
 
 if ($realign == 1){
-	# Map raw reads to candidates and find contigs
+	# Map raw reads to candidates and find contigs (Depricated in r3)
 	system("./mapping_contigs.pl $output_prefix\.contigs.fa $input_F $input_R $k_mer_len $num_thread $output_prefix\.candidates");
 	system("./select_contigs.pl $output_prefix\.candidates.fa $output_prefix\.candidates.DP $k_mer_len $step_size $cut_CV $read_length $output_prefix\.contigs.filtered");
 }
@@ -50,6 +50,7 @@ sub ReadArgument{
 	$k_mer_len = 120;
 	$step_size = 3;
 	$min_depth = 2;
+	$min_seed = 100;
 	$cut_seed = 100;
 	$cut_edge = 150;
 	$cut_CV = 0.2163;
@@ -75,6 +76,7 @@ sub ReadArgument{
     	if (($arg eq "-C")||($arg eq "--cut_CV")){ $cut_CV = shift @ARGV; next; }
     	if ($arg eq "--cut_edge") { $cut_edge = shift @ARGV; next; }
     	if ($arg eq "--cut_seed") { $cut_seed = shift @ARGV; next; }
+    	if ($arg eq "--min_seed") { $min_seed = shift @ARGV; next; }
     	if ($arg eq "--read_length") { $read_length = shift @ARGV; next; }
     	if (($arg eq "-t")||($arg eq "--thread")){ $num_thread = shift @ARGV; next; }
     	if (($arg eq "-b")||($arg eq "--bin_size")){ $bin_size = shift @ARGV; next; }
@@ -107,13 +109,14 @@ sub PrintError{
 		"    -k, --kmer        INT     Length of k-mer [Default: $k_mer_len]\n",
 		"    -s, --step        INT     Step size for exploring the graph [Default: $step_size]\n",
 		"    -m, --min_depth   INT     Minimum depth of nodes and edges [Default: $min_depth]\n",
-		"    -e, --exclude     FILE    List of exclusion sequences while constructing graph [Default: $exc_fname]\n",
-		"    -C, --cut_CV      FLOAT   Cutoff for coefficient of variation [Default: 0.2163]\n",
 		"    --cut_edge        INT     Cutoff ratio for edges [Default: $cut_edge]\n",
 		"    --cut_seed        INT     Cutoff ratio for seeds [Default: $cut_seed]\n",
+		"    --min_seed        INT     Minimun depth of seeds [Default: $min_seed]\n",
+		"    -e, --exclude     FILE    List of exclusion sequences while constructing graph [Default: $exc_fname]\n",
 		"    --read_length     INT     Read length of raw reads [Default: $read_length]\n",
 		"    -t, --thread      INT     Number of threads [Default: $num_thread]\n",
 		"    -b, --bin_size    INT     Number of reads in a bin [Default: $bin_size]\n",
+		"    -C, --cut_CV      FLOAT   Cutoff for coefficient of variation [Default: 0.2163]\n",
 		"    -a, --realign             Realign raw reads to contigs\n",
 		"    -v, --verbose             Verbose-mode On\n"; 
 #		"    -h, -?, --help       This help message\n",

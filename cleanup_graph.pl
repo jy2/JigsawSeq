@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # Clean up the de Bruijn graph to speed up the searching step and reduce false postive.
-# last modified: Apr-13-2015
+# last modified: Apr-22-2015
 # Developed by Jung-Ki Yoon
 
 use strict;
@@ -105,15 +105,6 @@ print "[Report:cleanup_graph] $num_Gibbs_skipped_node nodes were neglected since
 print "[Report:cleanup_graph] $num_skipped_edge edges were cleaned up (maxEdgeDepth/EdgeDepth > $cut_edge or EdgeDepth is less than $minEdgeDepth.)\n";
 print "[Report:cleanup_graph] Remaining $num_record_nodes nodes and $num_record_edges edges were recorded.\n",
       "                       Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
-
-=pro
-$t_begin = new Benchmark;
-print "[Report:sorting] Sorting initiated.\n";
-`sort -r -n -k 2 $out_fname > $out_fname\.sort`;
-$t_end = new Benchmark;
-print "[Report:sorting] Sorting was completed.\n",
-      "                 Processed Time = ", timestr(timediff($t_end, $t_begin)), "\n\n";
-=cut
 
 exit;
 
