@@ -23,10 +23,10 @@ cf. `bwa` and `samtools` are included in this package.
 
 Simply, **JigsawSeq** can be excuted like:
 
-    ./Jigsaw.pl -F Ex1_f.fastq -R Ex1_r.fastq -V pBR322_vector.fasta -L 816 -O Ex1
+    ./Jigsaw.pl -F Ex1_F.fastq -R Ex1_R.fastq -V pBR322_vector.fasta -L 816 -O Ex1
 
 
-The example fastq files (ex1\_f.fastq, ex1\_r.fastq) can be downloaded in here; [Ex1_f.fastq.gz](http://chem.yonsei.ac.kr/~duhee/files/Ex1_f.fastq.gz) and  [Ex1_r.fastq.gz](http://chem.yonsei.ac.kr/~duhee/files/Ex1_r.fastq.gz).
+The example fastq files (Ex1\_F.fastq, Ex1\_R.fastq) can be downloaded in here; [Ex1_F.fastq.gz](http://chem.yonsei.ac.kr/~duhee/files/Ex1_F.fastq.gz) and  [Ex1_R.fastq.gz](http://chem.yonsei.ac.kr/~duhee/files/Ex1_R.fastq.gz).
 
 With default parameters, **JigsawSeq** will use ~20Gb of memory for analyzing a 1.5Gb size of fastq file (~5,000,000 reads for *KanR* library). But, the memory usage depends on several factors; amount of reads, length of contigs, mutation rate, and sequencing quality. Therefore, the exact memory usage will be varied at specific situations. We highly recommend to use Hiseq data instead of MiSeq or NextSeq data, since sequencing error rates of MiSeq/NextSeq data are generally higher than one of HiSeq data, and much higher memory space is required when using other machines. Note that you can reduce the memory usage by lowering `--bin_size` (default: 15,000,000) when running `Jigsaw.pl`.
 
